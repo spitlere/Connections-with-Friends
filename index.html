@@ -33,9 +33,9 @@
     }
   </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     html, body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #ffffff;
       color: #121213;
       user-select: none;
@@ -44,9 +44,6 @@
       overflow: hidden;
       position: fixed;
       width: 100%;
-    }
-    .serif-font {
-      font-family: 'Libre+Baskerville', serif;
     }
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -64,11 +61,29 @@
     .animate-pop {
       animation: pop 0.25s ease-in-out;
     }
+    /* Portrait lock overlay if device rotates in standalone/browser mode */
+    #orientation-lock {
+      display: none;
+    }
+    @media screen and (orientation: landscape) and (max-height: 550px) {
+      #orientation-lock {
+        display: flex;
+      }
+    }
   </style>
 </head>
 <body class="flex flex-col bg-white text-gray-900 antialiased">
 
-  <!-- Top Navigation Bar with Bulletproof Safe Area Clearance for iPhone Pro Max / Dynamic Island -->
+  <!-- Landscape Warning / Lock Overlay -->
+  <div id="orientation-lock" class="fixed inset-0 bg-white z-[100] flex-col items-center justify-center p-6 text-center">
+    <svg class="w-10 h-10 text-gray-800 mb-3 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+    </svg>
+    <p class="font-bold text-base text-gray-900">Please rotate your device back to portrait</p>
+    <p class="text-xs text-gray-500 mt-1">This board is locked to vertical orientation.</p>
+  </div>
+
+  <!-- Top Navigation Bar with Safe Area Clearance -->
   <header class="border-b border-gray-200 px-3 pb-2.5 flex items-center justify-between bg-white shrink-0 z-50 shadow-sm" style="padding-top: max(12px, env(safe-area-inset-top));">
     <div class="flex items-center space-x-2">
       <button onclick="switchView('play')" class="p-1.5 text-gray-600 hover:text-black rounded-lg transition" title="Play Game">
@@ -79,7 +94,7 @@
       </button>
     </div>
     <div class="flex items-center space-x-2">
-      <button onclick="openImportModal()" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 font-medium rounded-full transition text-gray-700">Import Board</button>
+      <button onclick="openImportModal()" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 font-semibold rounded-full transition text-gray-700">Import Board</button>
     </div>
   </header>
 
@@ -108,10 +123,17 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-2">
-          <button onclick="shuffleGrid()" class="py-2.5 px-3 border border-black rounded-full font-bold text-[11px] uppercase tracking-wider hover:bg-gray-50 transition active:scale-95">Shuffle</button>
-          <button onclick="deselectAll()" class="py-2.5 px-3 border border-black rounded-full font-bold text-[11px] uppercase tracking-wider hover:bg-gray-50 transition active:scale-95">Deselect All</button>
-          <button id="submit-btn" onclick="submitGuess()" disabled class="py-2.5 px-3 bg-gray-200 text-gray-400 rounded-full font-bold text-[11px] uppercase tracking-wider transition cursor-not-allowed">Submit</button>
+        <!-- Active Game Buttons -->
+        <div id="active-controls" class="grid grid-cols-3 gap-2">
+          <button onclick="shuffleGrid()" class="py-2.5 px-3 border border-black rounded-full font-bold text-xs uppercase tracking-wider hover:bg-gray-50 transition active:scale-95">Shuffle</button>
+          <button onclick="deselectAll()" class="py-2.5 px-3 border border-black rounded-full font-bold text-xs uppercase tracking-wider hover:bg-gray-50 transition active:scale-95">Deselect All</button>
+          <button id="submit-btn" onclick="submitGuess()" disabled class="py-2.5 px-3 bg-gray-200 text-gray-400 rounded-full font-bold text-xs uppercase tracking-wider transition cursor-not-allowed">Submit</button>
+        </div>
+
+        <!-- Post-Game Persistent Share/Results Bar -->
+        <div id="post-game-controls" class="hidden grid-cols-2 gap-2">
+          <button onclick="openResultsModal()" class="py-2.5 px-4 bg-black text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-gray-800 transition active:scale-95 shadow-sm">View Results</button>
+          <button onclick="shareResults()" class="py-2.5 px-4 border border-black text-black rounded-full font-bold text-xs uppercase tracking-wider hover:bg-gray-50 transition active:scale-95">Share Results</button>
         </div>
       </div>
     </div>
@@ -120,23 +142,14 @@
     <!-- VIEW 2: BOARD BUILDER (CREATE) -->
     <div id="view-create" class="hidden flex-col h-full py-2">
       <div class="mb-2 shrink-0">
-        <h2 class="serif-font text-lg font-bold tracking-tight">Board Builder</h2>
-        <p class="text-[11px] text-gray-500">Design a private puzzle. Answers remain encrypted when shared!</p>
+        <h2 class="text-lg font-extrabold tracking-tight">Board Builder</h2>
+        <p class="text-xs text-gray-500">Design a private puzzle. Answers remain encrypted when shared.</p>
       </div>
 
       <div class="space-y-3 flex-1 overflow-y-auto pr-1 pb-16">
-        <div>
-          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Puzzle Title</label>
-          <input type="text" id="builder-title" placeholder="e.g. Sarah's Birthday Challenge" class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
-        </div>
-        <div>
-          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Creator Name</label>
-          <input type="text" id="builder-author" placeholder="e.g. Alex" class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
-        </div>
-
         <!-- Category 1: Yellow -->
         <div class="p-2.5 rounded-xl bg-nyt-yellow/20 border border-nyt-yellow/50 space-y-1.5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-yellow-800">Yellow Category (Easy)</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-yellow-800">Yellow Category (Easy)</span>
           <input type="text" id="cat-0-name" placeholder="Category Name (e.g., TYPES OF FISH)" class="w-full px-2.5 py-1 text-xs bg-white border border-gray-300 rounded-md">
           <div class="grid grid-cols-2 gap-1.5">
             <input type="text" id="cat-0-w-0" placeholder="Word 1" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-md">
@@ -148,7 +161,7 @@
 
         <!-- Category 2: Green -->
         <div class="p-2.5 rounded-xl bg-nyt-green/20 border border-nyt-green/50 space-y-1.5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-green-800">Green Category (Medium)</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-green-800">Green Category (Medium)</span>
           <input type="text" id="cat-1-name" placeholder="Category Name (e.g., GARDEN TOOLS)" class="w-full px-2.5 py-1 text-xs bg-white border border-gray-300 rounded-md">
           <div class="grid grid-cols-2 gap-1.5">
             <input type="text" id="cat-1-w-0" placeholder="Word 1" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-md">
@@ -160,7 +173,7 @@
 
         <!-- Category 3: Blue -->
         <div class="p-2.5 rounded-xl bg-nyt-blue/20 border border-nyt-blue/50 space-y-1.5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800">Blue Category (Tricky)</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-blue-800">Blue Category (Tricky)</span>
           <input type="text" id="cat-2-name" placeholder="Category Name (e.g., ___ BOWLING)" class="w-full px-2.5 py-1 text-xs bg-white border border-gray-300 rounded-md">
           <div class="grid grid-cols-2 gap-1.5">
             <input type="text" id="cat-2-w-0" placeholder="Word 1" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-md">
@@ -172,7 +185,7 @@
 
         <!-- Category 4: Purple -->
         <div class="p-2.5 rounded-xl bg-nyt-purple/20 border border-nyt-purple/50 space-y-1.5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-purple-900">Purple Category (Hardest)</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-purple-900">Purple Category (Hardest)</span>
           <input type="text" id="cat-3-name" placeholder="Category Name (e.g., SILENT LETTERS)" class="w-full px-2.5 py-1 text-xs bg-white border border-gray-300 rounded-md">
           <div class="grid grid-cols-2 gap-1.5">
             <input type="text" id="cat-3-w-0" placeholder="Word 1" class="px-2 py-1 text-xs bg-white border border-gray-300 rounded-md">
@@ -194,7 +207,7 @@
   <!-- Import Modal -->
   <div id="import-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-3 shadow-2xl">
-      <h3 class="serif-font text-base font-bold">Import Puzzle Board</h3>
+      <h3 class="text-base font-extrabold">Import Puzzle Board</h3>
       <p class="text-xs text-gray-500">Paste the puzzle link/code sent by your friend, or upload their puzzle file.</p>
       
       <textarea id="import-code-input" rows="3" placeholder="Paste encrypted puzzle code or URL here..." class="w-full p-2.5 text-xs border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black"></textarea>
@@ -214,7 +227,7 @@
   <!-- Results / Win Modal -->
   <div id="results-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 text-center space-y-3 shadow-2xl">
-      <h3 id="results-title" class="serif-font text-xl font-bold">Great!</h3>
+      <h3 id="results-title" class="text-xl font-extrabold">Great!</h3>
       <p id="results-subtitle" class="text-xs text-gray-500">You solved the custom board.</p>
       
       <div id="results-emoji-grid" class="bg-gray-50 p-3 rounded-xl font-mono text-base tracking-widest leading-relaxed whitespace-pre-wrap select-all border border-gray-200"></div>
@@ -236,7 +249,7 @@
     };
 
     let currentPuzzle = {
-      title: "Sample Puzzle",
+      title: "Custom Puzzle",
       author: "Friend",
       categories: [
         { name: "OCEANS", words: ["PACIFIC", "ATLANTIC", "INDIAN", "ARCTIC"] },
@@ -251,8 +264,13 @@
       selectedIds: [],
       solvedCategories: [],
       mistakesRemaining: 4,
-      guessHistory: []
+      guessHistory: [],
+      isGameOver: false
     };
+
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait').catch(() => {});
+    }
 
     function obfuscateData(dataObj) {
       const jsonStr = JSON.stringify(dataObj);
@@ -286,12 +304,17 @@
       initGame();
     });
 
+    window.addEventListener('resize', () => {
+      fitTileFonts();
+    });
+
     function switchView(viewName) {
       const playView = document.getElementById('view-play');
       const createView = document.getElementById('view-create');
       if (viewName === 'play') {
         playView.style.display = 'flex';
         createView.style.display = 'none';
+        fitTileFonts();
       } else {
         playView.style.display = 'none';
         createView.style.display = 'flex';
@@ -303,6 +326,11 @@
       gameState.solvedCategories = [];
       gameState.mistakesRemaining = 4;
       gameState.guessHistory = [];
+      gameState.isGameOver = false;
+
+      document.getElementById('active-controls').style.display = 'grid';
+      document.getElementById('mistakes-container').style.display = 'flex';
+      document.getElementById('post-game-controls').style.display = 'none';
 
       let allTiles = [];
       currentPuzzle.categories.forEach((cat, catIdx) => {
@@ -329,24 +357,60 @@
       gameState.tiles.forEach(tile => {
         const isSelected = gameState.selectedIds.includes(tile.id);
         const btn = document.createElement('button');
-        btn.className = `h-14 sm:h-16 rounded-xl font-bold text-xs md:text-sm tracking-wide uppercase transition-all duration-150 flex items-center justify-center p-2 text-center border ${
+        btn.className = `tile-btn h-16 rounded-xl font-extrabold tracking-wide uppercase transition-all duration-150 flex items-center justify-center px-1.5 py-2 text-center border overflow-hidden leading-tight ${
           isSelected 
             ? 'bg-nyt-selected text-white border-nyt-selected shadow-inner scale-[0.98]' 
             : 'bg-[#EFF0F2] text-gray-900 border-transparent hover:bg-[#E5E6E8]'
         }`;
-        btn.innerText = tile.word;
+        
+        const span = document.createElement('span');
+        span.className = 'tile-label block w-full';
+        span.style.fontSize = '15px';
+        span.innerText = tile.word;
+        
+        btn.appendChild(span);
         btn.onclick = () => toggleTileSelection(tile.id);
         gridEl.appendChild(btn);
       });
 
+      requestAnimationFrame(fitTileFonts);
+
       const submitBtn = document.getElementById('submit-btn');
       if (gameState.selectedIds.length === 4) {
         submitBtn.disabled = false;
-        submitBtn.className = "py-2.5 px-3 bg-black text-white rounded-full font-bold text-[11px] uppercase tracking-wider transition active:scale-95 cursor-pointer";
+        submitBtn.className = "py-2.5 px-3 bg-black text-white rounded-full font-bold text-xs uppercase tracking-wider transition active:scale-95 cursor-pointer";
       } else {
         submitBtn.disabled = true;
-        submitBtn.className = "py-2.5 px-3 bg-gray-200 text-gray-400 rounded-full font-bold text-[11px] uppercase tracking-wider transition cursor-not-allowed";
+        submitBtn.className = "py-2.5 px-3 bg-gray-200 text-gray-400 rounded-full font-bold text-xs uppercase tracking-wider transition cursor-not-allowed";
       }
+    }
+
+    function fitTileFonts() {
+      const tiles = document.querySelectorAll('.tile-btn');
+      tiles.forEach(btn => {
+        const span = btn.querySelector('.tile-label');
+        if (!span) return;
+        
+        let fontSize = 15;
+        span.style.fontSize = fontSize + 'px';
+        span.style.whiteSpace = 'nowrap';
+
+        const maxWidth = btn.clientWidth - 10;
+        while (span.scrollWidth > maxWidth && fontSize > 10) {
+          fontSize -= 0.5;
+          span.style.fontSize = fontSize + 'px';
+        }
+
+        if (span.scrollWidth > maxWidth) {
+          span.style.whiteSpace = 'normal';
+          span.style.wordBreak = 'break-word';
+          const maxHeight = btn.clientHeight - 8;
+          while (span.scrollHeight > maxHeight && fontSize > 9) {
+            fontSize -= 0.5;
+            span.style.fontSize = fontSize + 'px';
+          }
+        }
+      });
     }
 
     function toggleTileSelection(id) {
@@ -445,8 +509,8 @@
       const banner = document.createElement('div');
       banner.className = `w-full p-2.5 rounded-xl ${colorConfig.bg} flex flex-col items-center justify-center text-center shadow-sm animate-pop`;
       banner.innerHTML = `
-        <span class="font-bold text-[11px] uppercase tracking-wider">${cat.name}</span>
-        <span class="text-[11px] mt-0.5 font-medium">${cat.words.join(', ')}</span>
+        <span class="font-extrabold text-xs uppercase tracking-wider">${cat.name}</span>
+        <span class="text-xs mt-0.5 font-medium">${cat.words.join(', ')}</span>
       `;
       container.appendChild(banner);
     }
@@ -464,7 +528,12 @@
     }
 
     function triggerGameOver(isWin) {
-      const modal = document.getElementById('results-modal');
+      gameState.isGameOver = true;
+
+      document.getElementById('active-controls').style.display = 'none';
+      document.getElementById('mistakes-container').style.display = 'none';
+      document.getElementById('post-game-controls').style.display = 'grid';
+
       const titleEl = document.getElementById('results-title');
       const subtitleEl = document.getElementById('results-subtitle');
       const emojiGridEl = document.getElementById('results-emoji-grid');
@@ -477,7 +546,11 @@
 
       emojiGridEl.innerText = gameState.guessHistory.join('\n');
 
-      modal.style.display = 'flex';
+      openResultsModal();
+    }
+
+    function openResultsModal() {
+      document.getElementById('results-modal').style.display = 'flex';
     }
 
     function closeResultsModal() {
@@ -486,7 +559,10 @@
 
     function shareResults() {
       const emojiText = gameState.guessHistory.join('\n');
-      const shareText = `Connections with Friends\n${emojiText}`;
+      const title = currentPuzzle.title && currentPuzzle.title !== "Custom Puzzle" 
+        ? currentPuzzle.title 
+        : "Connections with Friends";
+      const shareText = `${title}\n${emojiText}`;
 
       if (navigator.share) {
         navigator.share({
@@ -509,8 +585,8 @@
     }
 
     function generateAndShareBoard() {
-      const title = document.getElementById('builder-title').value.trim() || "Custom Puzzle";
-      const author = document.getElementById('builder-author').value.trim() || "Anonymous";
+      const title = "Custom Puzzle";
+      const author = "Friend";
 
       const categories = [];
       for (let i = 0; i < 4; i++) {
@@ -536,7 +612,7 @@
       const baseUrl = window.location.href.split('#')[0];
       const shareUrl = `${baseUrl}#puzzle=${encoded}`;
 
-      const iMessageText = `🧩 I made a custom Connections board for you! Play it here:\n${shareUrl}`;
+      const iMessageText = `🧩 I made a custom Connections board for you! Play it here:`;
 
       if (navigator.share) {
         navigator.share({
@@ -545,14 +621,15 @@
           url: shareUrl
         }).catch(() => {});
       } else {
-        navigator.clipboard.writeText(iMessageText);
+        const clipboardText = `${iMessageText}\n${shareUrl}`;
+        navigator.clipboard.writeText(clipboardText);
         showToast("Puzzle link copied to clipboard for iMessage!");
       }
 
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(puzzleObj));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `${title.toLowerCase().replace(/\s+/g, '-')}.nytconn`);
+      downloadAnchor.setAttribute("download", `custom-connections.nytconn`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
